@@ -14,10 +14,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //        createCoroutines()
-//        nestCoroutine1()
 //        nestCoroutine2()
+
 //        nestCoroutine3()
+//        makeCoroutineScope()
         makeCoroutineScope()
+        Log.d(TAG, "nestCoroutine4 get result")
+
     }
 
 
@@ -33,6 +36,7 @@ class MainActivity : AppCompatActivity() {
         val coroutineJob = GlobalScope.launch {
             Log.d(TAG, "current Thread is ${Thread.currentThread()}")
         }
+
         /**
          * 2.runBlocking
          * 默认在调用线程创建协程
@@ -41,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         val coroutine2 = runBlocking {
             Log.d(TAG, "current Thread is ${Thread.currentThread()}")
         }
+
         /**
          * 3.async与await
          * 默认开启新线程创建协程
@@ -57,7 +62,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun nestCoroutine1() = runBlocking {
         val job = GlobalScope.launch {
-            delay(1000)
+            delay(50000)
             Log.d(TAG, "launch current Thread is ${Thread.currentThread()}")
         }
         Log.d(TAG, "runBlocking current Thread is ${Thread.currentThread()}")
@@ -73,7 +78,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun nestCoroutine2() = GlobalScope.launch {
         val job = GlobalScope.launch {
-            delay(1000)
+            delay(10000)
             Log.d(TAG, "launch2 current Thread is ${Thread.currentThread()}")
         }
         Log.d(TAG, "launch1 current Thread is ${Thread.currentThread()}")
@@ -98,6 +103,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * 协程嵌套 launch嵌套launch
+     * 非阻塞
+     * 主协程（主线程）内部开启子协程（工作线程）
+     * 主协程非阻塞式等待子协程执行完毕
+     */
+    private fun nestCoroutine4() {
+        GlobalScope.launch(Dispatchers.Main) {
+            val job = GlobalScope.launch(Dispatchers.IO) {
+                delay(5000)
+                Log.d(TAG, "get result thread is ${Thread.currentThread()}")
+            }
+            job.join()
+            Log.d(TAG, "job is result")
+            Log.d(TAG, "current thread is ${Thread.currentThread()}")
+
+        }
+    }
+
+    /**
      * 协程作用域 coroutineScope创建协程作用域
      * runBlocking会等待协程作用域内执行结束
      */
@@ -106,8 +130,9 @@ class MainActivity : AppCompatActivity() {
             delay(200L)
             Log.d(TAG, "launch current Thread is ${Thread.currentThread()}")
         }
-
-        coroutineScope() {
+        val coroutinesContext = newSingleThreadContext("scope-thread")
+        val scope = CoroutineScope(coroutinesContext)
+        coroutineScope {
             // 创建一个协程作用域
             launch {
                 delay(500L)
@@ -121,5 +146,14 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "runBlocking current Thread is ${Thread.currentThread()}")
     }
 
+    /**
+     * 定义挂起函数
+     * suspend关键字定义挂起函数,挂起函数只能在协程中调用
+     */
+    suspend fun doWork(scope: CoroutineScope) {
+        scope.launch {
+            Log.d(TAG, "doWork current Thread is ${Thread.currentThread()}")
+        }
+    }
 
 }
